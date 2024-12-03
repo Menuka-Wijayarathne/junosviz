@@ -1,0 +1,5 @@
+pysnmp
+httpx
+influxdb-client
+ncclient
+lxml
