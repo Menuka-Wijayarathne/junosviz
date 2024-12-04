@@ -8,7 +8,7 @@ A Python package for BGP monitoring and state analysis.
 - Retrieve bgp metrics using Juniper-specific MIBs,openconfig yang models,ietf and juniper native yang models
 - Generate alerts for BGP state changes.(in built bettertack alerting method)
 - Support bgp next hop encoding capablity.
-- tested on junos 23.4R2-S2.1
+- Tested on junos 23.4R2-S2.1
 - Easily trigger alerts using betterstack or using grafana
 ![image](https://github.com/user-attachments/assets/a08c95f3-8c07-4e35-ab33-9c8155c1ddc8)
 
