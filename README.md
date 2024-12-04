@@ -9,6 +9,7 @@ A Python package for BGP monitoring and state analysis.
 - Generate alerts for BGP state changes.(in built bettertack alerting method)
 - Support bgp next hop encoding capablity.
 - tested on junos 23.4R2-S2.1 
+![image](https://github.com/user-attachments/assets/a08c95f3-8c07-4e35-ab33-9c8155c1ddc8)
 
 ## Installation
 Install `junosviz` via pip:
