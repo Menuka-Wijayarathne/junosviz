@@ -17,9 +17,9 @@ Install `junosviz` via pip:
 ```bash
 pip install junosviz
 
-## how to use package and the modules
+##package and the modules
 
-*how to use method BgpPeerStateMonitor in module bgp_peer_state_monitor
+1.how to use method BgpPeerStateMonitor in module bgp_peer_state_monitor
 
 import asyncio
 from junosviz.bgp_jnxBgpM2PeerState_alert.bgp_peer_state_monitor import BgpPeerStateMonitor
@@ -34,3 +34,22 @@ async def main():
     await monitor.start_polling()
 
 asyncio.run(main())
+
+once you create the object and invoke the method, below attributes will be passed to betterstack webhook as encoded as json parameters.
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.webhook_url,
+                json={
+                    "alert_type": "BGP Peer State Alert",
+                    "peer_state": peer_state,
+                    "instance_id": instance_id,
+                    "remote_peer_address": remote_peer_address,
+                    "remote_peer_as": remote_peer_as,
+                    "timestamp": timestamp,
+                    "index": str(alert_index)
+                }
+            )
+
+2.how to use method BGPDataFetcher in module yang_bgp_peer_info
+
