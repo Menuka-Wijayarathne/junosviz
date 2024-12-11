@@ -52,4 +52,101 @@ once you create the object and invoke the method, below attributes will be passe
             )
 
 2.how to use method BGPDataFetcher in module yang_bgp_peer_info
+here , i desinged the BGPDataFetcher to return following the data in json format so we can easily feed them into time series databases.(influx db usually)
 
+ for rib in peer.findall("bgp-rib"):
+                rib_name = rib.findtext("name")
+                if rib_name in ["inet.0", "inet6.0"]:
+                    prefix = rib_name.replace(".", "_")
+                    peer_data["fields"][f"{prefix}_active_prefix_count"] = int(rib.findtext("active-prefix-count"))
+                    peer_data["fields"][f"{prefix}_received_prefix_count"] = int(rib.findtext("received-prefix-count"))
+                    peer_data["fields"][f"{prefix}_accepted_prefix_count"] = int(rib.findtext("accepted-prefix-count"))
+                    peer_data["fields"][f"{prefix}_suppressed_prefix_count"] = int(rib.findtext("suppressed-prefix-count"))
+
+you can integrate nornir framework and integrate this method effectively with your junos device
+
+example code:
+
+from nornir import InitNornir
+from nornir_utils.plugins.functions import print_result
+from nornir.core.task import Task, Result
+from bgp_monitoring.yang_jnxbgp_peer_stateinfo.yang_bgp_peer_info import BGPDataFetcher
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+import json
+import time
+
+# InfluxDB configuration
+INFLUXDB_URL = "http://localhost:8086"
+INFLUXDB_TOKEN = "ZqWUabsv7KxKEkr_6l9GCJZnmPgGexh-KtXJoaG5PFTzZzPrdzLI-e8FpoLne_BJaNQhkH5kwpPocLK_9NtL6w=="
+INFLUXDB_ORG = "heart_internet"
+INFLUXDB_BUCKET = "bgp_yang"
+POLLING_INTERVAL = 15  # Define the polling interval here
+
+def yang_bgp(task: Task) -> Result:
+    host = task.host
+    
+    # Initialize the BGPDataFetcher for each host
+    fetcher = BGPDataFetcher(
+        host=host.hostname,
+        username=host.username,
+        password=host.password,
+        polling_interval=POLLING_INTERVAL
+    )
+    
+    # Set up InfluxDB client
+    client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG)
+    write_api = client.write_api(write_options=SYNCHRONOUS)
+    
+    try:
+        # Fetch BGP data for the host
+        data_json = fetcher.fetch_bgp_data()
+        data = json.loads(data_json)
+
+        # Write fetched data to InfluxDB
+        for entry in data:
+            point = (
+                Point(entry["measurement"])
+                .tag("peer_address", entry["tags"]["peer_address"])
+                .tag("peer_as", entry["tags"]["peer_as"])
+                .tag("peer_description", entry["tags"]["peer_description"])
+            )
+
+            for field, value in entry["fields"].items():
+                point = point.field(field, value)
+
+            # Use the parsed timestamp or set InfluxDB to use the server time
+            point = point.time(entry["timestamp"])
+            write_api.write(bucket=INFLUXDB_BUCKET, record=point)
+
+        return Result(
+            host=task.host,
+            result=f"Data successfully written to InfluxDB for {host.name}"
+        )
+    except Exception as e:
+        return Result(
+            host=task.host,
+            failed=True,
+            exception=e
+        )
+    finally:
+        client.close()
+
+# Main function to initialize Nornir and run tasks continuously
+def main():
+    nr = InitNornir(config_file="/home/dco/nms/nornir/config.yaml")
+    filtered = nr.filter(role="dfz")
+    
+    try:
+        while True:
+            print(f"Running tasks for filtered hosts: {list(filtered.inventory.hosts.keys())}")
+            result = filtered.run(task=yang_bgp)
+            print_result(result)
+            
+            # Wait for the polling interval
+            time.sleep(POLLING_INTERVAL)
+    except KeyboardInterrupt:
+        print("Polling stopped.")
+
+if __name__ == "__main__":
+    main()
