@@ -16,3 +16,21 @@ A Python package for BGP monitoring and state analysis.
 Install `junosviz` via pip:
 ```bash
 pip install junosviz
+
+## how to use package and the modules
+
+*how to use method BgpPeerStateMonitor in module bgp_peer_state_monitor
+
+import asyncio
+from junosviz.bgp_jnxBgpM2PeerState_alert.bgp_peer_state_monitor import BgpPeerStateMonitor
+
+async def main():
+    monitor = BgpPeerStateMonitor(
+        community='snmp community v2',
+        agent_ip='ip address of the snmp client',
+        interval=300,  desired polling interval
+        webhook_url='https://uptime.betterstack.com/api/v1/incoming-webhook/8reBKaETXnEBhbp2v49m1DJp'  # Replace with actual webhook URL
+    )
+    await monitor.start_polling()
+
+asyncio.run(main())
